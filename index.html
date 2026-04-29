@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dueparty Cup</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f0f0f0; color: #222; }
+
+    header {
+      background: #1a1a2e; color: white;
+      padding: 12px 16px;
+      display: flex; justify-content: space-between; align-items: center;
+      position: sticky; top: 0; z-index: 10;
+    }
+    header h1 { font-size: 1rem; font-weight: 700; letter-spacing: 0.5px; }
+    #round-badge {
+      font-size: 0.8rem; background: rgba(255,255,255,0.2);
+      padding: 3px 10px; border-radius: 12px;
+    }
+
+    .tabs {
+      display: flex; background: white;
+      border-bottom: 2px solid #e0e0e0;
+      position: sticky; top: 46px; z-index: 9;
+    }
+    .tab {
+      flex: 1; padding: 10px 4px; text-align: center;
+      border: none; background: none; cursor: pointer;
+      font-size: 0.82rem; color: #666; font-weight: 500;
+    }
+    .tab.active {
+      color: #1a1a2e; font-weight: 700;
+      border-bottom: 2px solid #1a1a2e; margin-bottom: -2px;
+    }
+
+    .content { padding: 14px; max-width: 600px; margin: 0 auto; }
+
+    .card {
+      background: white; border-radius: 10px;
+      padding: 14px; margin-bottom: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .section-label {
+      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.8px;
+      color: #888; margin-bottom: 10px; font-weight: 600;
+    }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 9px 16px; border-radius: 7px; border: none;
+      cursor: pointer; font-size: 0.88rem; font-weight: 600;
+      transition: opacity 0.15s;
+    }
+    .btn:active { opacity: 0.7; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary   { background: #1a1a2e; color: white; }
+    .btn-success   { background: #2e7d32; color: white; }
+    .btn-danger    { background: #c62828; color: white; }
+    .btn-secondary { background: #757575; color: white; }
+    .btn-outline   { background: white; color: #1a1a2e; border: 2px solid #1a1a2e; }
+    .btn-full      { width: 100%; }
+
+    .row { display: flex; gap: 8px; }
+    .row .btn { flex: 1; }
+
+    input[type="text"], input[type="number"] {
+      padding: 9px 12px; border: 1.5px solid #ddd;
+      border-radius: 7px; font-size: 0.9rem;
+      outline: none; transition: border-color 0.15s;
+    }
+    input[type="text"]   { width: 100%; margin-bottom: 8px; }
+    input[type="number"] { width: 64px; text-align: center; }
+    input[type="text"]:focus, input[type="number"]:focus { border-color: #1a1a2e; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px 6px; text-align: left; font-size: 0.83rem; border-bottom: 1px solid #f0f0f0; }
+    th { font-size: 0.72rem; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .badge {
+      display: inline-block; padding: 2px 9px;
+      border-radius: 12px; font-size: 0.72rem; font-weight: 600;
+    }
+    .badge-pending { background: #fff8e1; color: #e65100; }
+    .badge-done    { background: #e8f5e9; color: #2e7d32; }
+    .badge-draw    { background: #e3f2fd; color: #1565c0; }
+
+    .table-group {
+      border: 1.5px solid #e8e8e8; border-radius: 8px;
+      padding: 12px; margin-bottom: 10px;
+    }
+    .table-group-title {
+      font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; color: #444;
+    }
+    .bye-group {
+      border: 1.5px dashed #ffcc80; border-radius: 8px;
+      padding: 12px; margin-bottom: 10px; background: #fff8e1;
+    }
+    .bye-group-title { font-weight: 700; font-size: 0.85rem; margin-bottom: 6px; color: #e65100; }
+
+    .player-select-btn {
+      display: block; width: 100%; padding: 11px 14px; margin-bottom: 7px;
+      text-align: left; border: 2px solid #e0e0e0; border-radius: 8px;
+      background: white; cursor: pointer; font-size: 0.88rem;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .player-select-btn:hover  { border-color: #aaa; }
+    .player-select-btn.winner { border-color: #2e7d32; background: #e8f5e9; color: #1b5e20; font-weight: 600; }
+
+    .player-name { font-weight: 600; }
+    .player-pts  { font-size: 0.78rem; color: #888; margin-left: 6px; }
+    .bye-badge   { font-size: 0.7rem; color: #e65100; margin-left: 4px; background: #fff3e0; padding: 1px 5px; border-radius: 4px; }
+
+    .counter-row {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+    }
+    .counter-label { font-size: 0.88rem; min-width: 80px; }
+    .info-text { font-size: 0.82rem; color: #555; margin-bottom: 12px; padding: 8px 10px; background: #f5f5f5; border-radius: 6px; }
+    .warn-text { font-size: 0.82rem; color: #c62828; margin-bottom: 12px; padding: 8px 10px; background: #fff5f5; border-radius: 6px; }
+
+    .center { text-align: center; padding: 40px 20px; color: #888; }
+    .center .icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .advance { background: #f1f8e9; }
+
+    .gap4  { height: 4px;  }
+    .gap8  { height: 8px;  }
+    .gap12 { height: 12px; }
+
+    .spinner {
+      border: 3px solid #eee; border-top-color: #1a1a2e;
+      border-radius: 50%; width: 28px; height: 28px;
+      animation: spin 0.8s linear infinite; margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Dueparty Cup</h1>
+  <span id="round-badge">-</span>
+</header>
+
+<div id="tabs"></div>
+<div id="content" class="content">
+  <div class="center"><div class="spinner"></div><p>読み込み中...</p></div>
+</div>
+
+<script>
+// ============================================================
+// 設定：デプロイしたApps ScriptのURLを貼り付け
+// ============================================================
+const API_URL = 'https://script.google.com/macros/s/AKfycbx4uuBsXRLySe8PXHFRbK-TZN8HLfKw3cPWS2y8QlIxidbsMs3ziTx8wIEXKrQR5h_H/exec';
+
+// ============================================================
+// 状態
+// ============================================================
+const IS_ADMIN = location.search.includes('admin');
+let state = { players: [], matches: [], settings: {} };
+let currentTab = IS_ADMIN ? 'players' : 'standings';
+
+// ラウンド作成の状態
+let roundConfig = { num3: 0, num4: 0 };
+let proposedRound = null; // { tables: [[...]], bye: [...] }
+
+// ============================================================
+// API
+// ============================================================
+async function api(action, payload = {}) {
+  const params = new URLSearchParams({
+    action,
+    ...(Object.keys(payload).length ? { payload: JSON.stringify(payload) } : {}),
+  });
+  const res = await fetch(API_URL + '?' + params);
+  if (!res.ok) throw new Error('通信エラー: ' + res.status);
+  return res.json();
+}
+
+async function loadData() {
+  const data = await api('get_data');
+  if (data.error) throw new Error(data.error);
+  state = data;
+}
+
+async function refresh() {
+  await loadData();
+  render();
+}
+
+// ============================================================
+// ルーティング
+// ============================================================
+const ADMIN_TABS  = [['players','選手'], ['rounds','ラウンド'], ['results','結果入力'], ['config','設定']];
+const PUBLIC_TABS = [['standings','順位表'], ['matches','対戦状況']];
+
+function render() {
+  const round = state.settings.current_round || 1;
+  document.getElementById('round-badge').textContent = '第' + round + '回戦';
+
+  const tabs = IS_ADMIN ? ADMIN_TABS : PUBLIC_TABS;
+  document.getElementById('tabs').innerHTML =
+    '<div class="tabs">' +
+    tabs.map(([id, label]) =>
+      `<button class="tab ${currentTab===id?'active':''}" onclick="go('${id}')">${label}</button>`
+    ).join('') + '</div>';
+
+  const el = document.getElementById('content');
+  el.innerHTML = '';
+  const views = { standings, matches, players, rounds, results, config };
+  if (views[currentTab]) el.appendChild(views[currentTab]());
+}
+
+function go(tab) { currentTab = tab; render(); }
+
+// ============================================================
+// 公開ビュー：順位表
+// ============================================================
+function standings() {
+  const isPublic = toBoolean(state.settings.results_public);
+  const f = document.createDocumentFragment();
+
+  if (!isPublic) {
+    f.appendChild(div('center', [
+      div('icon', ['🔒']),
+      p('5回戦終了後に公開されます'),
+    ]));
+    return f;
+  }
+
+  const sorted = [...state.players].sort((a, b) => b.points - a.points);
+  const medals = ['🥇','🥈','🥉'];
+
+  const rows = sorted.map((p, i) => {
+    const tr = document.createElement('tr');
+    if (i < 13) tr.className = 'advance';
+    tr.innerHTML = `
+      <td>${medals[i] || (i + 1)}</td>
+      <td><span class="player-name">${esc(p.name)}</span></td>
+      <td>${Math.ceil(p.points)}</td>
+    `;
+    return tr;
+  });
+
+  f.appendChild(card('順位（上位13名が本戦進出）', [
+    table(['', '選手名', 'ポイント'], rows),
+  ]));
+  return f;
+}
+
+// ============================================================
+// 公開ビュー：対戦状況
+// ============================================================
+function matches() {
+  const round = state.settings.current_round || 1;
+  const roundMatches = state.matches.filter(m => m.round == round);
+  const f = document.createDocumentFragment();
+
+  if (roundMatches.length === 0) {
+    f.appendChild(div('center', [p('対戦情報がありません')]));
+    return f;
+  }
+
+  roundMatches.forEach(m => {
+    const names = m.players.map(id => playerName(id));
+    const { text, cls } = resultDisplay(m.result, m.players, names);
+    const c = card(`第${m.round}回戦　卓${m.table}`, [
+      p(names.join(' vs ')),
+      gap(),
+      badge(text, cls),
+    ]);
+    f.appendChild(c);
+  });
+  return f;
+}
+
+// ============================================================
+// 管理ビュー：選手
+// ============================================================
+function players() {
+  const f = document.createDocumentFragment();
+
+  const nameInput = input('text', '選手名を入力', 'new-name');
+  const addBtn    = btn('追加', 'btn-primary btn-full', async () => {
+    const name = document.getElementById('new-name').value.trim();
+    if (!name) return;
+    addBtn.disabled = true;
+    addBtn.textContent = '追加中...';
+    const res = await api('add_player', { name });
+    if (res.error) alert(res.error);
+    await refresh();
+  });
+
+  f.appendChild(card('選手登録', [nameInput, addBtn]));
+
+  const rows = state.players.map(p => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${esc(p.id)}</td>
+      <td><span class="player-name">${esc(p.name)}</span></td>
+      <td>${Math.ceil(p.points)}</td>
+      <td>${p.byes || 0}</td>
+    `;
+    return tr;
+  });
+
+  f.appendChild(card(`登録済み　${state.players.length}名`, [
+    table(['ID', '名前', 'ポイント', '休み回数'], rows),
+  ]));
+  return f;
+}
+
+// ============================================================
+// 管理ビュー：ラウンド
+// ============================================================
+function rounds() {
+  const round        = parseInt(state.settings.current_round) || 1;
+  const roundMatches = state.matches.filter(m => m.round == round);
+  const f            = document.createDocumentFragment();
+
+  if (roundMatches.length === 0) {
+    // 卓割り作成フェーズ
+    const n = state.players.length;
+
+    if (proposedRound) {
+      // 提案を表示
+      const tableNodes = proposedRound.tables.map((t, i) => {
+        const names = t.map(id => playerName(id));
+        return div('table-group', [
+          div('table-group-title', [`卓 ${i + 1}（${t.length}人）`]),
+          p(names.join('　')),
+        ]);
+      });
+
+      const byeNode = proposedRound.bye.length > 0
+        ? [div('bye-group', [
+            div('bye-group-title', ['休み（このラウンドはお休み）']),
+            p(proposedRound.bye.map(id => {
+              const pl = state.players.find(x => x.id === id);
+              return pl ? pl.name : id;
+            }).join('　')),
+          ])]
+        : [];
+
+      const shuffleBtn  = btn('シャッフル', 'btn-outline', () => {
+        proposedRound = makeProposal(roundConfig.num3, roundConfig.num4);
+        render();
+      });
+      const confirmBtn  = btn('この組み合わせで確定', 'btn-primary', async () => {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = '作成中...';
+        const res = await api('create_round', {
+          round,
+          tables:  proposedRound.tables,
+          bye_ids: proposedRound.bye,
+        });
+        if (res.error) { alert(res.error); confirmBtn.disabled = false; return; }
+        proposedRound = null;
+        await refresh();
+        go('results');
+      });
+
+      f.appendChild(card(`第${round}回戦　卓割り（確認）`, [
+        ...tableNodes,
+        ...byeNode,
+        gap(),
+        div('row', [shuffleBtn, confirmBtn]),
+      ]));
+      return f;
+    }
+
+    // 設定フォーム
+    const infoNode = div('info-text', [
+      `登録選手：${n}名`,
+    ]);
+
+    const num3Input = input('number', '', 'cnt3', '0', '0', '10');
+    const num4Input = input('number', '', 'cnt4', '0', '0', '10');
+
+    // 初期値を設定
+    setTimeout(() => {
+      document.getElementById('cnt3') && (document.getElementById('cnt3').value = roundConfig.num3);
+      document.getElementById('cnt4') && (document.getElementById('cnt4').value = roundConfig.num4);
+      updateRoundInfo();
+    }, 0);
+
+    const infoResult = document.createElement('div');
+    infoResult.id = 'round-info';
+
+    function updateRoundInfo() {
+      const x   = parseInt(document.getElementById('cnt3')?.value) || 0;
+      const y   = parseInt(document.getElementById('cnt4')?.value) || 0;
+      const use = x * 3 + y * 4;
+      const bye = n - use;
+      const el  = document.getElementById('round-info');
+      if (!el) return;
+      if (use > n) {
+        el.className = 'warn-text';
+        el.textContent = `⚠ 対局人数（${use}名）が登録選手数（${n}名）を超えています`;
+      } else if (use < 3 && !(x === 0 && y === 0)) {
+        el.className = 'warn-text';
+        el.textContent = '⚠ 卓を設定してください';
+      } else if (x === 0 && y === 0) {
+        el.className = 'info-text';
+        el.textContent = '3人卓・4人卓の数を指定してください';
+      } else {
+        el.className = 'info-text';
+        el.textContent = `対局：${use}名（${y}卓×4人 + ${x}卓×3人）　休み：${bye}名`;
+      }
+    }
+
+    [num3Input, num4Input].forEach(inp => {
+      inp.addEventListener('input', () => {
+        roundConfig.num3 = parseInt(document.getElementById('cnt3').value) || 0;
+        roundConfig.num4 = parseInt(document.getElementById('cnt4').value) || 0;
+        updateRoundInfo();
+      });
+    });
+
+    const proposeBtn = btn(`第${round}回戦の卓割りを提案`, 'btn-primary btn-full', () => {
+      const x   = parseInt(document.getElementById('cnt3').value) || 0;
+      const y   = parseInt(document.getElementById('cnt4').value) || 0;
+      const use = x * 3 + y * 4;
+      if (use > n)   { alert(`人数が足りません（必要${use}名、登録${n}名）`); return; }
+      if (use === 0) { alert('卓の数を指定してください'); return; }
+      roundConfig = { num3: x, num4: y };
+      proposedRound = makeProposal(x, y);
+      render();
+    });
+
+    f.appendChild(card(`第${round}回戦　卓割り設定`, [
+      infoNode,
+      div('counter-row', [
+        div('counter-label', ['4人卓']),
+        num4Input,
+        p('卓'),
+      ]),
+      div('counter-row', [
+        div('counter-label', ['3人卓']),
+        num3Input,
+        p('卓'),
+      ]),
+      infoResult,
+      proposeBtn,
+    ]));
+
+  } else {
+    // 卓割り表示
+    const allDone  = roundMatches.every(m => m.result !== 'pending');
+    const groups   = roundMatches.map(m => {
+      const names       = m.players.map(id => playerName(id));
+      const { text, cls } = resultDisplay(m.result, m.players, names);
+      return div('table-group', [
+        div('table-group-title', [`卓 ${m.table}`]),
+        p(names.join('　')),
+        gap(),
+        badge(text, cls),
+      ]);
+    });
+
+    f.appendChild(card(`第${round}回戦　卓割り`, groups));
+
+    if (allDone && round < 5) {
+      const nextBtn = btn(`第${round + 1}回戦へ進む`, 'btn-primary btn-full', async () => {
+        if (!confirm(`第${round + 1}回戦を開始しますか？`)) return;
+        await api('set_setting', { key: 'current_round', value: round + 1 });
+        proposedRound = null;
+        roundConfig   = { num3: 0, num4: 0 };
+        await refresh();
+      });
+      f.appendChild(card(null, [nextBtn]));
+    }
+
+    if (allDone && round >= 5) {
+      f.appendChild(card(null, [
+        p('全5回戦が終了しました', 'font-weight:700;text-align:center;'),
+        gap(),
+        p('設定タブから順位表を公開できます', 'font-size:0.85rem;color:#888;text-align:center;'),
+      ]));
+    }
+  }
+
+  return f;
+}
+
+// ============================================================
+// 管理ビュー：結果入力
+// ============================================================
+function results() {
+  const round        = state.settings.current_round || 1;
+  const roundMatches = state.matches.filter(m => m.round == round);
+  const f            = document.createDocumentFragment();
+
+  if (roundMatches.length === 0) {
+    f.appendChild(div('center', [p('まずラウンドタブで卓割りを作成してください')]));
+    return f;
+  }
+
+  const pending = roundMatches.filter(m => m.result === 'pending');
+  const done    = roundMatches.filter(m => m.result !== 'pending');
+
+  pending.forEach(m => {
+    const ps       = m.players.map(id => state.players.find(p => p.id === id)).filter(Boolean);
+    const btnNodes = ps.map((p, i) => {
+      const b = document.createElement('button');
+      b.className = 'player-select-btn';
+      b.innerHTML = `<span class="player-name">${esc(p.name)}</span><span class="player-pts">${Math.ceil(p.points)} pt</span>`;
+      b.onclick = async () => {
+        if (!confirm(`「${p.name}」の勝利で登録しますか？`)) return;
+        b.className = 'player-select-btn winner';
+        const res = await api('submit_result', { round: m.round, table: m.table, result: `p${i+1}_win` });
+        if (res.error) { alert(res.error); b.className = 'player-select-btn'; return; }
+        await refresh();
+      };
+      return b;
+    });
+
+    const drawBtn     = btn('引き分け', 'btn-secondary btn-full', async () => {
+      if (!confirm('引き分けで登録しますか？')) return;
+      const res = await api('submit_result', { round: m.round, table: m.table, result: 'draw' });
+      if (res.error) { alert(res.error); return; }
+      await refresh();
+    });
+    drawBtn.style.marginTop = '4px';
+
+    f.appendChild(card(`第${m.round}回戦　卓${m.table}　─　勝者を選択`, [...btnNodes, drawBtn]));
+  });
+
+  if (done.length > 0) {
+    const rows = done.map(m => {
+      const names  = m.players.map(id => playerName(id));
+      const { text } = resultDisplay(m.result, m.players, names);
+      const d = document.createElement('div');
+      d.style.cssText = 'margin-bottom:6px;font-size:0.87rem;';
+      d.textContent = `卓${m.table}：${text}`;
+      return d;
+    });
+    f.appendChild(card('完了した対戦', rows));
+  }
+
+  return f;
+}
+
+// ============================================================
+// 管理ビュー：設定
+// ============================================================
+function config() {
+  const isPublic = toBoolean(state.settings.results_public);
+  const f        = document.createDocumentFragment();
+
+  const toggleBtn = btn(
+    isPublic ? '順位表を非公開にする' : '順位表を公開する',
+    'btn-full ' + (isPublic ? 'btn-danger' : 'btn-success'),
+    async () => {
+      if (!confirm(isPublic ? '非公開に戻しますか？' : '順位表を公開しますか？')) return;
+      await api('set_setting', { key: 'results_public', value: !isPublic });
+      await refresh();
+    }
+  );
+
+  f.appendChild(card('順位表の公開設定', [
+    p(`現在：${isPublic ? '公開中' : '非公開'}`, 'margin-bottom:12px;'),
+    toggleBtn,
+  ]));
+
+  const urlEl   = document.createElement('p');
+  urlEl.style.cssText = 'font-size:0.8rem;color:#666;word-break:break-all;';
+  urlEl.textContent   = '管理画面：' + location.origin + location.pathname + '?admin';
+  f.appendChild(card('URL', [urlEl]));
+
+  return f;
+}
+
+// ============================================================
+// ユーティリティ
+// ============================================================
+
+// 卓割り提案：byeが少ない順に優先して対局枠へ
+function makeProposal(num3, num4) {
+  const totalSpots = num3 * 3 + num4 * 4;
+
+  // byes昇順でソート、同byesはランダム
+  const sorted = [...state.players]
+    .map(p => ({ ...p, r: Math.random() }))
+    .sort((a, b) => (a.byes - b.byes) || (a.r - b.r));
+
+  const active = sorted.slice(0, totalSpots).map(p => p.id);
+  const bye    = sorted.slice(totalSpots).map(p => p.id);
+
+  // activeをシャッフルして卓に配分（4人卓 → 3人卓の順）
+  const shuffled = active.sort(() => Math.random() - 0.5);
+  const tables   = [];
+  let idx = 0;
+  for (let i = 0; i < num4; i++) { tables.push(shuffled.slice(idx, idx + 4)); idx += 4; }
+  for (let i = 0; i < num3; i++) { tables.push(shuffled.slice(idx, idx + 3)); idx += 3; }
+
+  return { tables, bye };
+}
+
+function playerName(id) {
+  const p = state.players.find(pl => pl.id === id);
+  return p ? p.name : id;
+}
+
+function resultDisplay(result, playerIds, playerNames) {
+  if (result === 'pending') return { text: '対戦中',   cls: 'badge-pending' };
+  if (result === 'draw')    return { text: '引き分け', cls: 'badge-draw' };
+  const m = result && result.match(/p(\d+)_win/);
+  if (m) return { text: playerNames[parseInt(m[1]) - 1] + ' 勝利', cls: 'badge-done' };
+  return { text: result || '', cls: '' };
+}
+
+function toBoolean(v) { return v === true || v === 'true' || v === 'TRUE'; }
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ---- DOM helpers ----
+
+function card(label, children) {
+  const d = document.createElement('div');
+  d.className = 'card';
+  if (label) { const l = document.createElement('div'); l.className = 'section-label'; l.textContent = label; d.appendChild(l); }
+  (children || []).forEach(c => c && d.appendChild(typeof c === 'string' ? tn(c) : c));
+  return d;
+}
+
+function div(cls, children) {
+  const d = document.createElement('div');
+  if (cls) d.className = cls;
+  (children || []).forEach(c => c && d.appendChild(typeof c === 'string' ? tn(c) : c));
+  return d;
+}
+
+function p(text, style) {
+  const el = document.createElement('p');
+  el.textContent = text;
+  if (style) el.style.cssText = style;
+  return el;
+}
+
+function gap() { const d = document.createElement('div'); d.className = 'gap8'; return d; }
+function tn(s) { return document.createTextNode(s); }
+
+function badge(text, cls) {
+  const s = document.createElement('span');
+  s.className = 'badge ' + (cls || '');
+  s.textContent = text;
+  return s;
+}
+
+function btn(label, cls, onclick) {
+  const b = document.createElement('button');
+  b.className = 'btn ' + (cls || '');
+  b.textContent = label;
+  if (onclick) b.onclick = onclick;
+  return b;
+}
+
+function input(type, placeholder, id, value, min, max) {
+  const i = document.createElement('input');
+  i.type = type;
+  if (placeholder) i.placeholder = placeholder;
+  if (id) i.id = id;
+  if (value !== undefined) i.value = value;
+  if (min !== undefined) i.min = min;
+  if (max !== undefined) i.max = max;
+  return i;
+}
+
+function table(headers, rows) {
+  const t    = document.createElement('table');
+  const head = document.createElement('thead');
+  const hr   = document.createElement('tr');
+  headers.forEach(h => { const th = document.createElement('th'); th.textContent = h; hr.appendChild(th); });
+  head.appendChild(hr);
+  t.appendChild(head);
+  const body = document.createElement('tbody');
+  rows.forEach(r => body.appendChild(r));
+  t.appendChild(body);
+  return t;
+}
+
+// ============================================================
+// 起動
+// ============================================================
+refresh().catch(err => {
+  document.getElementById('content').innerHTML =
+    `<div class="center"><p>エラー：${esc(err.message)}</p><p style="margin-top:8px;font-size:0.8rem;">API_URLを確認してください</p></div>`;
+});
+
+// 公開ページは30秒ごとに自動更新
+if (!IS_ADMIN) setInterval(() => refresh().catch(() => {}), 30000);
+</script>
+</body>
+</html>
