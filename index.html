@@ -151,7 +151,7 @@
 // ============================================================
 // 設定：デプロイしたApps ScriptのURLを貼り付け
 // ============================================================
-const API_URL = 'https://script.google.com/macros/s/AKfycbx4uuBsXRLySe8PXHFRbK-TZN8HLfKw3cPWS2y8QlIxidbsMs3ziTx8wIEXKrQR5h_H/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycby7JVjCdaWP3QMuFbpxPbqUtFDHQm31-TbVAbD5bVl0s6JC6nJXYDCfqqNHX888PyH1/exec';
 
 // ============================================================
 // 状態
@@ -191,7 +191,7 @@ async function refresh() {
 // ============================================================
 // ルーティング
 // ============================================================
-const ADMIN_TABS  = [['players','選手'], ['rounds','ラウンド'], ['results','結果入力'], ['config','設定']];
+const ADMIN_TABS  = [['players','選手'], ['rounds','ラウンド'], ['results','結果入力'], ['history','履歴'], ['config','設定']];
 const PUBLIC_TABS = [['standings','順位表'], ['matches','対戦状況']];
 
 function render() {
@@ -207,7 +207,7 @@ function render() {
 
   const el = document.getElementById('content');
   el.innerHTML = '';
-  const views = { standings, matches, players, rounds, results, config };
+  const views = { standings, matches, players, rounds, results, history, config };
   if (views[currentTab]) el.appendChild(views[currentTab]());
 }
 
@@ -542,6 +542,59 @@ function results() {
 }
 
 // ============================================================
+// 管理ビュー：履歴
+// ============================================================
+function history() {
+  const f = document.createDocumentFragment();
+
+  if (state.matches.length === 0) {
+    f.appendChild(div('center', [p('対戦履歴がありません')]));
+    return f;
+  }
+
+  // ラウンドごとにまとめる
+  const maxRound = Math.max(...state.matches.map(m => m.round));
+
+  for (let r = 1; r <= maxRound; r++) {
+    const roundMatches = state.matches.filter(m => m.round == r);
+    if (roundMatches.length === 0) continue;
+
+    const tableNodes = roundMatches.map(m => {
+      const names        = m.players.map(id => playerName(id));
+      const { text, cls } = resultDisplay(m.result, m.players, names);
+
+      // ポイント増減の詳細行
+      const detailRows = m.players.map((id, i) => {
+        const pl      = state.players.find(p => p.id === id);
+        const isWin   = m.result === `p${i+1}_win`;
+        const isDraw  = m.result === 'draw';
+        const name    = pl ? pl.name : id;
+        let marker    = '';
+        if (isWin)       marker = '🏆';
+        else if (isDraw) marker = '△';
+        else if (m.result !== 'pending') marker = '✗';
+        const d = document.createElement('div');
+        d.style.cssText = 'font-size:0.83rem;padding:2px 0;display:flex;justify-content:space-between;';
+        d.innerHTML = `<span>${marker} ${esc(name)}</span>`;
+        return d;
+      });
+
+      return div('table-group', [
+        div('', [
+          (() => { const s = document.createElement('span'); s.style.fontWeight='700'; s.textContent=`卓 ${m.table}`; return s; })(),
+          (() => { const s = document.createElement('span'); s.style.cssText='margin-left:8px;'; s.appendChild(badge(text, cls)); return s; })(),
+        ]),
+        (() => { const d = document.createElement('div'); d.style.marginTop='6px'; detailRows.forEach(r => d.appendChild(r)); return d; })(),
+      ]);
+    });
+
+    f.appendChild(card(`第${r}回戦`, tableNodes));
+  }
+
+  return f;
+}
+
+// ============================================================
 // 管理ビュー：設定
 // ============================================================
 function config() {
@@ -563,6 +616,21 @@ function config() {
     toggleBtn,
   ]));
 
+  const resetBtn = btn('対戦結果・ポイントをリセット', 'btn-full btn-danger', async () => {
+    if (!confirm('全対戦履歴・ポイント・休み回数をリセットします。\n選手登録はそのまま残ります。\n本当によろしいですか？')) return;
+    if (!confirm('本当にリセットしますか？（この操作は元に戻せません）')) return;
+    const res = await api('reset_tournament');
+    if (res.error) { alert(res.error); return; }
+    proposedRound = null;
+    roundConfig   = { num3: 0, num4: 0 };
+    await refresh();
+  });
+
+  f.appendChild(card('リセット', [
+    p('選手登録はそのまま残し、対戦履歴・ポイント・休み回数だけをリセットします。', 'font-size:0.85rem;color:#555;margin-bottom:12px;'),
+    resetBtn,
+  ]));
+
   const urlEl   = document.createElement('p');
   urlEl.style.cssText = 'font-size:0.8rem;color:#666;word-break:break-all;';
   urlEl.textContent   = '管理画面：' + location.origin + location.pathname + '?admin';
@@ -579,10 +647,10 @@ function config() {
 function makeProposal(num3, num4) {
   const totalSpots = num3 * 3 + num4 * 4;
 
-  // byes昇順でソート、同byesはランダム
+  // byes降順でソート（休み回数が多い人を優先して対局へ）、同byesはランダム
   const sorted = [...state.players]
     .map(p => ({ ...p, r: Math.random() }))
-    .sort((a, b) => (a.byes - b.byes) || (a.r - b.r));
+    .sort((a, b) => (b.byes - a.byes) || (a.r - b.r));
 
   const active = sorted.slice(0, totalSpots).map(p => p.id);
   const bye    = sorted.slice(totalSpots).map(p => p.id);
