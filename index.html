@@ -151,7 +151,7 @@
 // ============================================================
 // 設定：デプロイしたApps ScriptのURLを貼り付け
 // ============================================================
-const API_URL = 'https://script.google.com/macros/s/AKfycby7JVjCdaWP3QMuFbpxPbqUtFDHQm31-TbVAbD5bVl0s6JC6nJXYDCfqqNHX888PyH1/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbx2cL0XSZ6Cl5zRTMdHjuo64sxDq9KMXf1_MfgiL8c96xuiegkHxK9BHbkl5NcSbSqi/exec';
 
 // ============================================================
 // 状態
@@ -616,7 +616,7 @@ function config() {
     toggleBtn,
   ]));
 
-  const resetBtn = btn('対戦結果・ポイントをリセット', 'btn-full btn-danger', async () => {
+  const resetMatchBtn = btn('対戦結果・ポイントをリセット', 'btn-full btn-danger', async () => {
     if (!confirm('全対戦履歴・ポイント・休み回数をリセットします。\n選手登録はそのまま残ります。\n本当によろしいですか？')) return;
     if (!confirm('本当にリセットしますか？（この操作は元に戻せません）')) return;
     const res = await api('reset_tournament');
@@ -626,9 +626,22 @@ function config() {
     await refresh();
   });
 
+  const resetAllBtn = btn('選手ごと全てリセット', 'btn-full btn-danger', async () => {
+    if (!confirm('選手登録・対戦履歴・ポイントを全て削除します。\n本当によろしいですか？')) return;
+    if (!confirm('本当にリセットしますか？（この操作は元に戻せません）')) return;
+    const res = await api('reset_players');
+    if (res.error) { alert(res.error); return; }
+    proposedRound = null;
+    roundConfig   = { num3: 0, num4: 0 };
+    await refresh();
+  });
+  resetAllBtn.style.marginTop = '8px';
+
   f.appendChild(card('リセット', [
-    p('選手登録はそのまま残し、対戦履歴・ポイント・休み回数だけをリセットします。', 'font-size:0.85rem;color:#555;margin-bottom:12px;'),
-    resetBtn,
+    p('対戦結果のみ：選手登録を残してポイント・履歴だけリセット', 'font-size:0.82rem;color:#555;margin-bottom:8px;'),
+    resetMatchBtn,
+    p('全リセット：選手登録も含めて全て削除', 'font-size:0.82rem;color:#555;margin-top:12px;margin-bottom:8px;'),
+    resetAllBtn,
   ]));
 
   const urlEl   = document.createElement('p');
